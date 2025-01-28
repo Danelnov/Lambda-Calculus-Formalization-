@@ -1,0 +1,6 @@
+name = "lambda"
+version = "0.1.0"
+defaultTargets = ["Lambda"]
+
+[[lean_lib]]
+name = "Lambda"

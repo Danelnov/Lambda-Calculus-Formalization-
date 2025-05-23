@@ -52,15 +52,15 @@ def subst (v : Lambda) (n : Nat) (e : Lambda) :=
   | app v₁ v₂ => app (v₁.subst n e) (v₂.subst n e)
   | abs v₁ => abs $ v₁.subst (n + 1) (e.shift 0 1)
 
-notation t " [" k " ↦ " s "]" => Lambda.subst t k s
+notation t " [" k " := " s "]" => Lambda.subst t k s
 
-def beta (M N : Lambda) := (↓) 0 1 (M[0 ↦ (↑) 0 1 N])
+def beta (M N : Lambda) := (↓) 0 1 (M[0 := (↑) 0 1 N])
 
 @[simp]
 def range : Lambda → Nat
   | var n => n
   | app e₁ e₂ => max (e₁.range) (e₂.range)
-  | abs e => e.range + 1
+  | abs e => e.range
 
 end Lambda
 

@@ -1,6 +1,16 @@
 import Lambda.Defs
 open Lambda
 
+theorem add_ne_of_ne (a b c : Nat) : a ≠ b → a + c ≠ b + c := by
+  intro h
+  rcases Nat.lt_or_gt_of_ne h with aleb | agtb
+  -- * Case a < b
+  . exact Nat.ne_of_lt <| Nat.add_lt_add_right aleb c
+  . exact Nat.ne_of_gt <| Nat.add_lt_add_right agtb c
+
+example {a b : Nat} : a ≠ b → a < b ∨ a > b := by
+  exact fun a_1 => Nat.lt_or_gt_of_ne a_1
+
 theorem shift_var_le {c i n : Nat}  : c ≤ n → (↑) c i n = n + i := by
   intro h
   unfold shift
@@ -91,10 +101,9 @@ theorem shift_add (n m : Nat) (N : Lambda)
     rw [Nat.add_assoc, Nat.add_comm 1 m, ← Nat.add_assoc]
     exact Nat.add_le_add_right jleim 1
 
--- (↑) 0 1 ((↑) i j L) =
 
 theorem shift_subst (N : Lambda) :
-  ∀ {n i j L}, i ≤ n → (↑) i j (N[n ↦ L]) = ((↑) i j N)[n + j ↦ (↑) i j L] := by
+  ∀ {n i j L}, i ≤ n → (↑) i j (N[n := L]) = ((↑) i j N)[n + j := (↑) i j L] := by
   induction N with
   | var m =>
     intro n i j L ilen
@@ -127,11 +136,11 @@ theorem shift_subst (N : Lambda) :
       simp <;> repeat (first | constructor | exact ih1 ilen | exact ih2 ilen )
     | abs N ih =>
       intro n i j L ilen
-      have : i + 1 ≤ n + 1 := Nat.add_le_add_right ilen 1
-      simp
+      have ip1_le_np1 : i + 1 ≤ n + 1 := Nat.add_le_add_right ilen 1
       sorry
 
-theorem subst_gt_range {M} : ∀ {N n}, n > range M → M[n ↦ N] = M := by
+
+theorem subst_gt_range {M} : ∀ {N n}, n > range M → M[n := N] = M := by
   induction M with
   | var m =>
     intro N n h
@@ -145,8 +154,9 @@ theorem subst_gt_range {M} : ∀ {N n}, n > range M → M[n ↦ N] = M := by
   | abs M ih =>
     intro N n h
     unfold range at h
-    have ngtrm1 : n + 1 > range M := Nat.lt_of_succ_lt <| Nat.lt_add_right 1 h
-    simp  [ih ngtrm1]
+    have : n + 1 > M.range := Nat.lt_add_right 1 h
+    simp [ih this]
+
 
 theorem gt_range_gt_shift {N : Lambda} :
   ∀ {n i j}, n > range N → n + j > range ((↑) i j N) := by
@@ -170,14 +180,11 @@ theorem gt_range_gt_shift {N : Lambda} :
   | abs N ih =>
     intro n i j h
     unfold range at h
-    have : n - 1 > range N := Nat.lt_sub_of_add_lt h
-    have := @ih (n - 1) (i + 1) j this
-    have : n + j > ((↑) (i + 1) j N).range + 1 := by sorry
-    simp [shift, range]
-    assumption
+    simp [@ih n (i + 1) j h]
+
 
 theorem sustitution {M N L: Lambda} :
-  ∀ {n m N L}, n ≠ m → n > range L → M[n ↦ N][m ↦ L] = M[m ↦ L][n ↦ N[m ↦ L]] := by
+  ∀ {n m N L}, n ≠ m → n > range L → M[n := N][m := L] = M[m := L][n := N[m := L]] := by
   induction M with
   | var k =>
     intro n m N L mneqn ngtrl
@@ -195,9 +202,9 @@ theorem sustitution {M N L: Lambda} :
     intro n m N L nneqm ngtrl
     simp [ih1 nneqm ngtrl, ih2 nneqm ngtrl]
   | abs M ih =>
-    intro n m N L nneqm ngtrl
-    have h1 : n + 1 ≠ m + 1 := by sorry
-    have : n + 1 > range ((↑) 0 1 L) := gt_range_gt_shift ngtrl
-    have := @ih (n + 1) (m + 1) ((↑) 0 1 N) ((↑) 0 1 L) h1 this
+    intro n m N L nneqm kngtrl
     simp
+    have np1gtl : n + 1 > ((↑) 0 1 L).range := by
+      apply gt_range_gt_shift
+      assumption
     sorry

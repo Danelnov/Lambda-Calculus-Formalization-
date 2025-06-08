@@ -4,3 +4,7 @@ defaultTargets = ["Lambda"]
 
 [[lean_lib]]
 name = "Lambda"
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"

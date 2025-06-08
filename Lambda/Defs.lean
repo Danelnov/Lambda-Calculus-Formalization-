@@ -47,10 +47,14 @@ notation:70 "↓" => Lambda.unshift
 def subst (v : Lambda) (n : Nat) (e : Lambda) :=
   match v with
   | var m =>
-    if m = n then e
-    else var m
+    if m < n then
+      var m
+    else if n = m then
+      (↑) 0 n e
+    else
+      var (m - 1)
   | app v₁ v₂ => app (v₁.subst n e) (v₂.subst n e)
-  | abs v₁ => abs $ v₁.subst (n + 1) (e.shift 0 1)
+  | abs v₁ => abs $ v₁.subst (n + 1) e
 
 notation t " [" k " := " s "]" => Lambda.subst t k s
 

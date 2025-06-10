@@ -71,10 +71,7 @@ lemma shift_subst  (M : Lambda) (k j i : Nat) (klej : k ≤ j) (L : Lambda) :
     simp [ih1, ih2]
     constructor <;> (first | apply ih1 | apply ih2) <;> assumption
   | abs M ih =>
-    simp
-    rw [Nat.add_assoc, Nat.add_comm i 1, ← Nat.add_assoc]
-    apply ih
-    exact Nat.add_le_add_right klej 1
+    simp; rw [Nat.add_assoc, Nat.add_comm i 1, ← Nat.add_assoc]; apply ih; omega
 
 @[simp]
 lemma shift_subst_eq_shift (M N : Lambda) (k i j : Nat) :
@@ -82,18 +79,8 @@ lemma shift_subst_eq_shift (M N : Lambda) (k i j : Nat) :
   induction M generalizing k i with
   | var n => repeat (first | simp | split_ifs | omega)
   | app M₁ M₂ ih1 ih2 =>
-    intro klei ileji
-    simp
-    constructor <;> (first | apply ih1 | apply ih2) <;> assumption
-  | abs M ih =>
-    intro klei ileji
-    simp
-    apply ih
-    exact Nat.add_le_add_right klei 1
-    have : i + 1 < k + (j + 1) + 1 := Nat.add_lt_add_right ileji 1
-    ring_nf at this
-    ring_nf
-    assumption
+    intros; simp; constructor <;> (first | apply ih1 | apply ih2) <;> assumption
+  | abs M ih => intros; simp; apply ih <;> omega
 
 theorem substitution (M N L : Lambda) (n m : Nat) (nlem : n ≤ m) :
   M[n := N][m := L] = M[m + 1 := L][n := N[m - n := L]] := by
@@ -103,11 +90,9 @@ theorem substitution (M N L : Lambda) (n m : Nat) (nlem : n ≤ m) :
     -- * Case k < n
     . simp_all [Nat.lt_of_lt_of_le klen nlem, Nat.lt_add_right 1 (Nat.lt_of_lt_of_le klen nlem)]
     -- * Case k = n
-    . have k_le_m1 : k < m + 1 := by omega
-      simp [k_le_m1]
-      apply Eq.symm
-      have zero_le_mmk : 0 ≤ m - k := (Nat.le_sub_iff_add_le' nlem).mpr nlem
-      have := shift_subst N 0 (m - k) k zero_le_mmk L
+    . simp [Nat.lt_add_one_of_le nlem]
+      symm
+      have := shift_subst N 0 (m - k) k ((Nat.le_sub_iff_add_le' nlem).mpr nlem) L
       rw [Nat.sub_add_cancel nlem] at this
       simp at this
       assumption
@@ -118,32 +103,15 @@ theorem substitution (M N L : Lambda) (n m : Nat) (nlem : n ≤ m) :
       have k_gt_0 := Nat.zero_lt_of_lt kgtn
       rcases Nat.lt_trichotomy (k - 1) m with k1_le_m | rfl | k1_gt_m
       -- * Case k - 1 < m
-      . simp [k1_le_m]
-        have k_le_m1 : k < m + 1 := by
-          exact (Nat.sub_lt_iff_lt_add k_gt_0).mp k1_le_m
-        simp [k_le_m1, nklen, knen]
+      . simp [k1_le_m, (Nat.sub_lt_iff_lt_add k_gt_0).mp k1_le_m, nklen, knen]
       -- * Case k - 1 = m
-      . have k_eq : k - 1 + 1 = k := Nat.sub_add_cancel (Nat.zero_lt_of_lt kgtn)
-        simp [k_eq]
-        have ⟨m, hm⟩: ∃ m : Nat, k = m + 1 := Nat.exists_eq_add_one.mpr k_gt_0
-        simp [hm]
-        apply shift_subst_eq_shift
-        exact Nat.zero_le n
+      . have ⟨_, hm⟩: ∃ m : Nat, k = m + 1 := Nat.exists_eq_add_one.mpr k_gt_0
+        simp [Nat.sub_add_cancel (Nat.zero_lt_of_lt kgtn), hm]
+        apply shift_subst_eq_shift; omega
         rw [← hm, Nat.zero_add]
         assumption
       -- * Case k - 1 > m
-      . have k_gt_m1 : k > m + 1 := Nat.add_lt_of_lt_sub k1_gt_m
-        have n_k1_le_m : ¬ (k - 1 < m) := Nat.not_lt_of_gt k1_gt_m
-        have m_ne_kp1 : m ≠ k - 1 := Nat.ne_of_lt k1_gt_m
-        have n_k_le_m1 : ¬ (k < m + 1) := Nat.not_lt_of_gt k_gt_m1
-        have m1_ne_k : m + 1 ≠ k := (Nat.ne_of_lt k_gt_m1)
-        have : n < k - 1 := Nat.lt_of_le_of_lt nlem k1_gt_m
-        have nkp1_le_n : ¬ (k - 1 < n) := by exact Nat.not_lt_of_gt this
-        simp [n_k1_le_m, m_ne_kp1, n_k_le_m1, m1_ne_k, nkp1_le_n]
-        intro n_eq_km1
-        rw [n_eq_km1] at this
-        have : k - 1 ≠ k - 1 := Nat.ne_of_lt this
-        contradiction
+      . simp_all [Nat.add_lt_of_lt_sub, Nat.not_lt_of_gt, Nat.ne_of_lt, Nat.lt_of_le_of_lt nlem k1_gt_m]
   | app M₁ M₂ ih1 ih2 => simp; constructor <;> (first | apply ih1 | apply ih2) <;> assumption
   | abs M ih =>
     have := ih (n + 1) (m + 1) (Nat.add_le_add_right nlem 1)

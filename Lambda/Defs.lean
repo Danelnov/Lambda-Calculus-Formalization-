@@ -2,6 +2,7 @@ inductive Lambda
   | var : Nat → Lambda
   | abs : Lambda → Lambda
   | app : Lambda → Lambda → Lambda
+  deriving DecidableEq, Repr
 
 prefix:100 "λ " => Lambda.abs
 

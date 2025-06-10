@@ -2,10 +2,6 @@ import Lambda.Defs
 import Mathlib.Tactic.Ring
 open Lambda
 
-theorem shift_var {c i n : Nat} :
-  (↑) c i n = if n < c then var n else var (n + i) := by
-  unfold shift; rfl
-
 theorem unshift_var_le {c i n : Nat} :
   c ≤ n → unshift c i (var n) = var (n - i) := by
   intro h
@@ -69,37 +65,7 @@ theorem shift_unshift_id (M : Lambda) (c i : Nat) : (↓) (c + i) i ((↑) c i M
 theorem shift_subst  (M : Lambda) (k j i : Nat) (klej : k ≤ j) (L : Lambda) :
   (↑) k i (M[j := L]) = ((↑) k i M)[j + i := L] := by
   induction M generalizing k j with
-  | var n =>
-    rcases Nat.lt_trichotomy n k with nlek | rfl | ngtk
-    -- * Case n < k
-    . have nlej : n < j := Nat.lt_of_lt_of_le nlek klej
-      have nlejp1 : n < j + i := Nat.lt_add_right i nlej
-      simp [nlej, nlek, nlejp1]
-    -- * Case n = k
-    . rcases Or.symm (Nat.eq_or_lt_of_le klej) with nlej | rfl
-      -- * Case n < j
-      . simp [nlej]
-      -- * Case n = j
-      . simp
-    -- * Case n > k
-    . have nnlek : ¬ (n < k) := Nat.not_lt_of_gt ngtk
-      rcases Nat.lt_trichotomy n j with nlej | rfl | ngtj
-      -- * Case n < j
-      . simp [nlej, nnlek]
-      -- * Case n = j
-      . simp [nnlek]
-        apply shift_add <;> simp ; assumption
-      -- * Case n > j
-      . have nnlej : ¬ (n < j) := Nat.not_lt_of_gt ngtj
-        have nnej : j ≠ n := Nat.ne_of_lt ngtj
-        have : ¬ (n - 1 < k) := by
-          intro h
-          apply Nat.lt_irrefl (n - 1)
-          apply Nat.lt_of_lt_of_le h
-          exact Nat.le_sub_one_of_lt ngtk
-        simp [nnlej, nnej, nnlek, this]
-        rw [Nat.sub_add_comm]
-        exact (Nat.zero_lt_of_lt ngtk)
+  | var n => repeat (first | simp | split_ifs | omega | apply shift_add)
   | app M₁ M₂ ih1 ih2 =>
     simp [ih1, ih2]
     constructor <;> (first | apply ih1 | apply ih2) <;> assumption
@@ -109,58 +75,29 @@ theorem shift_subst  (M : Lambda) (k j i : Nat) (klej : k ≤ j) (L : Lambda) :
     apply ih
     exact Nat.add_le_add_right klej 1
 
-
+@[simp]
 theorem shift_subst_eq_shift (M N : Lambda) (k i j : Nat) :
-  k ≤ i → i < k + (j + 1) → ((↑) k (j + 1) M)[i := N] = (↑) k j M := by
-  revert k i
-  induction M with
-  | var n =>
-    intro k i klei ileji
-    rcases Nat.lt_trichotomy n k with nlek | rfl | ngtk
-    -- * Case n < k
-    . have nlei : n < i := Nat.lt_of_lt_of_le nlek klei
-      have inen : i ≠ n := Ne.symm (Nat.ne_of_lt nlei)
-      simp [nlek, inen]
-      intro ilen
-      have : n < n := Nat.lt_of_lt_of_le nlei ilen
-      have : n ≠ n := Nat.ne_of_lt this
-      contradiction
-    -- * Case n = k
-    . simp [Nat.not_lt_of_gt ileji]
-      intro i_eq
-      have : n + (j + 1) < n + (j + 1) := lt_of_eq_of_lt (id (Eq.symm i_eq)) ileji
-      have : n + (j + 1) ≠ n + (j + 1) := Nat.ne_of_lt this
-      contradiction
-    -- * Case n > k
-    . have nnlek : ¬ (n < k) := Nat.not_lt_of_gt ngtk
-      have : k + (j + 1) < n + (j + 1) := Nat.add_lt_add_right ngtk (j + 1)
-      have i_le_nj1 : i < n + (j + 1) := Nat.lt_trans ileji this
-      have : ¬ (n + (j + 1) < i) := Nat.not_lt_of_gt i_le_nj1
-      simp [nnlek, this]
-      intro i_eq
-      have : n + (j + 1) < n + (j + 1) := lt_of_eq_of_lt (id (Eq.symm i_eq)) i_le_nj1
-      have : n + (j + 1) ≠ n + (j + 1) := Nat.ne_of_lt this
-      contradiction
-    | app M₁ M₂ ih1 ih2 =>
-      intro k i klei ileji
-      simp
-      constructor <;> (first | apply ih1 | apply ih2) <;> assumption
-    | abs M ih =>
-      intro k i klei ileji
-      simp
-      apply ih
-      exact Nat.add_le_add_right klei 1
-      have : i + 1 < k + (j + 1) + 1 := Nat.add_lt_add_right ileji 1
-      ring_nf at this
-      ring_nf
-      assumption
+  k ≤ i → i < k + (j + 1) → (↑) k j M = ((↑) k (j + 1) M)[i := N] := by
+  induction M generalizing k i with
+  | var n => repeat (first | simp | split_ifs | omega)
+  | app M₁ M₂ ih1 ih2 =>
+    intro klei ileji
+    simp
+    constructor <;> (first | apply ih1 | apply ih2) <;> assumption
+  | abs M ih =>
+    intro klei ileji
+    simp
+    apply ih
+    exact Nat.add_le_add_right klei 1
+    have : i + 1 < k + (j + 1) + 1 := Nat.add_lt_add_right ileji 1
+    ring_nf at this
+    ring_nf
+    assumption
 
-theorem substitution (M N L : Lambda) (n m : Nat) :
-  n ≤ m → M[n := N][m := L] = M[m + 1 := L][n := N[m - n := L]] := by
-  revert n m
-  induction M with
+theorem substitution (M N L : Lambda) (n m : Nat) (nlem : n ≤ m) :
+  M[n := N][m := L] = M[m + 1 := L][n := N[m - n := L]] := by
+  induction M generalizing n m with
   | var k =>
-    intro n m nlem
     rcases Nat.lt_trichotomy k n with klen | rfl |kgtn
     -- * Case k < n
     . have n_gt_range_k : n > range k := klen
@@ -192,7 +129,6 @@ theorem substitution (M N L : Lambda) (n m : Nat) :
         simp [k_eq]
         have ⟨m, hm⟩: ∃ m : Nat, k = m + 1 := Nat.exists_eq_add_one.mpr k_gt_0
         simp [hm]
-        apply Eq.symm
         apply shift_subst_eq_shift
         exact Nat.zero_le n
         rw [← hm, Nat.zero_add]
@@ -211,11 +147,9 @@ theorem substitution (M N L : Lambda) (n m : Nat) :
         have : k - 1 ≠ k - 1 := Nat.ne_of_lt this
         contradiction
   | app M₁ M₂ ih1 ih2 =>
-    intros
     simp
     constructor <;> (first | apply ih1 | apply ih2) <;> assumption
   | abs M ih =>
-    intro n m nlem
     have := ih (n + 1) (m + 1) (Nat.add_le_add_right nlem 1)
     rw [Nat.add_sub_add_right m 1 n] at this
     simp_all

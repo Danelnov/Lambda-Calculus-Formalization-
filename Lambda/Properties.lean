@@ -3,7 +3,7 @@ import Mathlib.Tactic.Ring
 open Lambda
 
 lemma unshift_var_le {c i n : Nat} :
-  c ≤ n → unshift c i (var n) = var (n - i) := by
+  c ≤ n → (↓) c i (var n) = var (n - i) := by
   intro h
   unfold unshift
   have nnltc : ¬ (n < c) := by omega

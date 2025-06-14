@@ -77,9 +77,22 @@ inductive Beta : Lambda → Lambda → Prop
 
 infixl:65 " →β " => Beta
 
+inductive BetaP : Lambda → Lambda → Prop
+  | refl (M) : BetaP M M
+  | abs (N M) : BetaP N M → BetaP (λ N) (λ M)
+  | app (M M' N N') : BetaP M M' → BetaP N N' → BetaP (M.app N) (M'.app N')
+  | subst (M M' N N') : BetaP M M' → BetaP N N' → BetaP ((λ M).app N) (Lambda.beta M' N')
+
+infixl:65 " →βp " => BetaP
+
+@[refl]
+theorem betap_refl {N : Lambda} :  N →βp N := BetaP.refl N
+
 inductive BetaTR : Lambda → Lambda → Prop
   | refl (M) : BetaTR M M
-  | beta (M N) : M →β N → BetaTR M N
-  | trans (M N L) : BetaTR M N → BetaTR N L → BetaTR M L
+  | step (M N L) : M →β L → BetaTR L N → BetaTR M N
 
 infixl:65 " ⇒β " => BetaTR
+
+@[refl]
+theorem betatr_refl {N : Lambda} : N ⇒β N := BetaTR.refl N

@@ -12,6 +12,7 @@ lemma unshift_var_le {c i n : Nat} :
 lemma unshift_var_lt {c i n : Nat} : n < c → (↓) c i n = var n := by
   intro h; unfold unshift; simp [h]
 
+@[simp]
 lemma shift_zero {N : Lambda} : ∀ {c}, (↑) c 0 N = N := by
   induction N with
   | var n => intro; simp
@@ -68,7 +69,7 @@ lemma shift_subst  (M : Lambda) (k j i : Nat) (klej : k ≤ j) (L : Lambda) :
   induction M generalizing k j with
   | var n => repeat (first | simp | split_ifs | omega | apply shift_add)
   | app M₁ M₂ ih1 ih2 =>
-    simp [ih1, ih2]
+    simp
     constructor <;> (first | apply ih1 | apply ih2) <;> assumption
   | abs M ih =>
     simp; rw [Nat.add_assoc, Nat.add_comm i 1, ← Nat.add_assoc]; apply ih; omega
@@ -106,7 +107,7 @@ theorem substitution (M N L : Lambda) (n m : Nat) (nlem : n ≤ m) :
       . simp [k1_le_m, (Nat.sub_lt_iff_lt_add k_gt_0).mp k1_le_m, nklen, knen]
       -- * Case k - 1 = m
       . have ⟨_, hm⟩: ∃ m : Nat, k = m + 1 := Nat.exists_eq_add_one.mpr k_gt_0
-        simp [Nat.sub_add_cancel (Nat.zero_lt_of_lt kgtn), hm]
+        simp [hm]
         apply shift_subst_eq_shift; omega
         rw [← hm, Nat.zero_add]
         assumption

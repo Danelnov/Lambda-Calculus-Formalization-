@@ -30,12 +30,9 @@ lemma shift_conservation {i j : Nat} {N N' : Lambda} : N →βp N' → (↑) i j
     intro h
     induction h generalizing i j with
     | refl _ => rfl
-    | abs N₁ N₂ h ih => simp; apply ih
+    | abs N₁ N₂ h ih => constructor; aesop
     | app M₁ M₂ N₁ N₂ hm hn ihm ihn =>
-        simp
-        apply BetaP.app
-        apply ihm
-        apply ihn
+        constructor <;> aesop
     | subst M₁ M₂ N₁ N₂ hm hn ihm ihn =>
-        simp
+        simp [Lambda.shift]
         sorry

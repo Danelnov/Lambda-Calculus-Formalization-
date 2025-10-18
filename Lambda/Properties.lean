@@ -74,3 +74,37 @@ lemma shift_subst_eq_shift (M N : Lambda) (k i j : Nat) :
 theorem substitution (M N L : Lambda) (n m : Nat) (nlem : n ≤ m) :
   M[n := N][m := L] = M[m + 1 := L][n := N[m - n := L]] := by
   sorry
+
+
+inductive Shifted : Nat → Nat → Lambda → Prop
+  | svar1 {d c n} : n < c → Shifted d c n
+  | svar2 {d c n} : c + d ≤ n → d ≤ n → Shifted d c n
+  | sapp {d c N₁ N₂} : Shifted d c N₁ → Shifted d c N₂ → Shifted d c (N₁.app N₂)
+  | sabs {d c N} : Shifted d (c + 1) N → Shifted d c (λ N)
+
+open Shifted
+
+theorem shiftShifted (d c) (N : Lambda) : Shifted d c ((↑) c d N) := by
+  induction N generalizing c <;> simp
+  case var n =>
+    split_ifs
+    . apply svar1; assumption
+    . apply svar2 <;> omega
+  all_goals constructor <;> aesop
+
+lemma shiftUnshiftSwap {d c d' c'} {N : Lambda} :
+  c' ≤ c → Shifted d' c' N → (↑) c d ((↓) c' d' N) = (↓) c' d' ((↑) (c + d') d N) := by
+  intro h₁ h₂
+  match N, h₂ with
+  | _, sapp hN₁ hN₂ =>
+    simp; constructor <;> apply shiftUnshiftSwap h₁ <;> assumption
+  | _, sabs hN =>
+    simp
+    rw [Nat.add_assoc, Nat.add_comm d' 1, ← Nat.add_assoc]
+    apply shiftUnshiftSwap; omega; assumption
+  | var n, svar1 nlecp =>
+    have : n < c := by omega
+    have : n < c + d' := by omega
+    simp_all
+  | var n, svar2 cpdle nled =>
+    repeat (first | split_ifs | omega | simp_all)

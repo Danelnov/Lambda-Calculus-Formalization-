@@ -7,7 +7,7 @@ inductive Lambda
 prefix:100 "λ " => Lambda.abs
 
 def Lambda.toString : Lambda → String
-  | var n => Nat.toDigits 10 n |> List.asString
+  | var n => n.repr
   | abs e => s!"λ {e.toString}"
   | app e₁ e₂ =>
     match e₁, e₂ with

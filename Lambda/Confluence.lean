@@ -26,13 +26,15 @@ lemma betap_appl {N₁ N₂ N' : Lambda} : N₁ →βp N₂ → N₁.app N' →�
 lemma betap_appr {N₁ N₂ N' : Lambda} : N₁ →βp N₂ → N'.app N₁ →βp N'.app N₂ := by
     intros; apply BetaP.app; rfl; assumption
 
-lemma shift_conservation {i j : Nat} {N N' : Lambda} : N →βp N' → (↑) i j N →βp (↑) i j N' := by
+lemma para_shift_conservation {i j : Nat} {N N' : Lambda} : N →βp N' → (↑) i j N →βp (↑) i j N' := by
     intro h
     induction h generalizing i j with
-    | refl _ => rfl
-    | abs N₁ N₂ h ih => constructor; aesop
-    | app M₁ M₂ N₁ N₂ hm hn ihm ihn =>
-        constructor <;> aesop
-    | subst M₁ M₂ N₁ N₂ hm hn ihm ihn =>
-        simp [Lambda.shift]
-        sorry
+    | refl => rfl
+    | abs => constructor; aesop
+    | app => constructor <;> aesop
+    | subst M₁ M₂ N₁ N₂ =>
+        simp_all [beta]
+        rw [shift_unshift_swap (Nat.zero_le i) (shifted_subst' 0 M₂ N₂)]
+        simp_all
+        rw [← shift_shift_swap _ (Nat.zero_le i), ← beta]
+        apply BetaP.subst <;> aesop

@@ -145,10 +145,24 @@ lemma shift_shift_swap {d c d' c'} (N : Lambda) :
 lemma shift_subst_swap {d c n} (h : n < c) (N₁ N₂ : Lambda) :
   (↑) c d (N₁ [n := N₂]) = ((↑) c d N₁)[n := (↑) c d N₂] := by
   induction N₁ generalizing N₂ c n with
-  | var=> repeat (first | simp | split_ifs | omega)
+  | var => repeat (first | simp | split_ifs | omega)
   | app => simp_all
   | abs =>
     simp_all
     have : (↑) 0 1 ((↑) c d N₂) = (↑) (c + 1) d ((↑) 0 1 N₂) := by
       apply shift_shift_swap; omega
     rw [this]
+
+@[simp]
+lemma unshift_shift_setoff {d c d' c'} (N : Lambda) :
+  c ≤ c' → c' ≤ d' + d + c → (↓) c' d' ((↑) c (d' + d) N) = (↑) c d N := by
+  intros h₁ h₂
+  induction N generalizing c c' with
+  | var => repeat (first | simp | split_ifs | omega)
+  | app => simp_all
+  | abs _ ih => simp_all; apply ih <;> omega
+
+lemma unshift_subst_swap {c n} (N₁ N₂ : Lambda) : c ≤ n → Shifted 1 c N₁ →
+  (↓) c 1 (N₁ [n + 1 := (↑) 0 (c + 1) N₂]) = ((↓) c 1 N₁)[n := (↑) 0 c N₂] := by
+  intros h₁ h₂
+  sorry

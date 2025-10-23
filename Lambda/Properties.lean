@@ -64,8 +64,7 @@ lemma shift_unshift_id (M : Lambda) (c i : Nat) : (↓) (c + i) i ((↑) c i M) 
     simp; rw [Nat.add_assoc, Nat.add_comm i 1, ← Nat.add_assoc]; exact ih (c + 1)
 
 lemma shift_subst  (M : Lambda) (k j i : Nat) (klej : k ≤ j) (L : Lambda) :
-  (↑) k i (M[j := L]) = ((↑) k i M)[j + i := L] := by
-  sorry
+  (↑) k i (M[j := L]) = ((↑) k i M)[j + i := L] := by sorry
 
 lemma shift_subst_eq_shift (M N : Lambda) (k i j : Nat) :
   k ≤ i → i < k + (j + 1) → (↑) k j M = ((↑) k (j + 1) M)[i := N] := by sorry
@@ -165,4 +164,20 @@ lemma unshift_shift_setoff {d c d' c'} (N : Lambda) :
 lemma unshift_subst_swap {c n} (N₁ N₂ : Lambda) : c ≤ n → Shifted 1 c N₁ →
   (↓) c 1 (N₁ [n + 1 := (↑) 0 (c + 1) N₂]) = ((↓) c 1 N₁)[n := (↑) 0 c N₂] := by
   intros h₁ h₂
-  sorry
+  induction N₁ generalizing n c with
+  | var m =>
+    cases h₂ <;> repeat (first | simp_all | split_ifs | omega)
+    any_goals (exfalso; omega)
+    . rw [Nat.add_comm c 1]; simp_all
+    . have : ¬ m < c := by omega
+      have : n ≠ m - 1 := by omega
+      simp_all
+  | _ => cases h₂; simp_all
+
+@[simp]
+lemma unshift_subst_swap' {n} (N₁ N₂ : Lambda) :
+  Shifted 1 0 N₁ → (↓) 0 1 (N₁[n + 1 := (↑) 0 1 N₂]) = ((↓) 0 1 N₁)[n := N₂] := by
+  intros
+  nth_rw 2 [← @shift_zero N₂ 0]
+  nth_rw 3 [← Nat.zero_add 1]
+  apply unshift_subst_swap; omega; assumption

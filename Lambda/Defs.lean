@@ -51,7 +51,7 @@ def subst (v : Lambda) (n : Nat) (e : Lambda) :=
   | app v₁ v₂ => app (v₁.subst n e) (v₂.subst n e)
   | abs v₁ => abs $ v₁.subst (n + 1) ((↑) 0 1 e)
 
-notation t " [" k " := " s "]" => Lambda.subst t k s
+notation t "[" k " := " s "]" => Lambda.subst t k s
 
 def beta (M N : Lambda) := (↓) 0 1 (M[0 := (↑) 0 1 N])
 

@@ -56,8 +56,10 @@ lemma para_subst {n} {M N M' N' : Lambda} :
     | abs _ _ _ ih =>
         simp; apply ih; apply para_shift_conservation; assumption
     | subst M M' P P' hm hp ihm ihp =>
-        conv =>
-            rhs
-            simp [beta, ← unshift_subst_swap' _ _ (shifted_subst' 0 M' P')]
-
-        sorry
+        have : 0 + 1 + n = n + 1 := by omega
+        rw [beta, ← unshift_subst_swap' _ _ (shifted_subst' 0 M' P'), ← this, substitution']
+        simp_all
+        rw [← shift_subst_swap', ← beta]
+        apply BetaP.subst
+        apply ihm; apply para_shift_conservation; assumption
+        all_goals aesop

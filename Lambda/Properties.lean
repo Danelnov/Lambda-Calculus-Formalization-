@@ -63,17 +63,6 @@ lemma shift_unshift_id (M : Lambda) (c i : Nat) : (↓) (c + i) i ((↑) c i M) 
   | abs M ih =>
     simp; rw [Nat.add_assoc, Nat.add_comm i 1, ← Nat.add_assoc]; exact ih (c + 1)
 
-lemma shift_subst  (M : Lambda) (k j i : Nat) (klej : k ≤ j) (L : Lambda) :
-  (↑) k i (M[j := L]) = ((↑) k i M)[j + i := L] := by sorry
-
-lemma shift_subst_eq_shift (M N : Lambda) (k i j : Nat) :
-  k ≤ i → i < k + (j + 1) → (↑) k j M = ((↑) k (j + 1) M)[i := N] := by sorry
-
-theorem substitution (M N L : Lambda) (n m : Nat) (nlem : n ≤ m) :
-  M[n := N][m := L] = M[m + 1 := L][n := N[m - n := L]] := by
-  sorry
-
-
 inductive Shifted : Nat → Nat → Lambda → Prop
   | svar1 {d c n} : n < c → Shifted d c n
   | svar2 {d c n} : c + d ≤ n → d ≤ n → Shifted d c n
@@ -181,3 +170,40 @@ lemma unshift_subst_swap' {n} (N₁ N₂ : Lambda) :
   nth_rw 2 [← @shift_zero N₂ 0]
   nth_rw 3 [← Nat.zero_add 1]
   apply unshift_subst_swap; omega; assumption
+
+
+lemma shift_subst_swap' {d c n} (N₁ N₂ : Lambda) (h : c ≤ n) :
+  (↑) c d (N₁[n := N₂]) = ((↑) c d N₁)[n + d := (↑) c d N₂] := by
+  induction N₁ generalizing c n N₂ with
+  | var => repeat (first | simp | split_ifs | omega)
+  | app => simp_all
+  | abs =>
+    simp_all
+    rw [Nat.add_assoc n d 1, Nat.add_comm d 1, ← Nat.add_assoc]
+    nth_rw 2 [shift_shift_swap]
+    omega
+
+@[simp]
+lemma subst_shited_cancel {d c n} (N₁ N₂ : Lambda) :
+  c ≤ n → n < c + d → Shifted d c N₁ → N₁[n := N₂] = N₁ := by
+  intro h₁ h₂ h₃
+  induction h₃ generalizing n N₂ with
+  | svar1 | svar2 => simp_all; intros; omega
+  | sapp => simp_all
+  | sabs _ ih => simp_all; apply ih <;> omega
+
+lemma substitution' {n m} (N₁ N₂ N₃ : Lambda) :
+  N₁[m := (↑) 0 (m + 1) N₂][m + 1 + n := (↑) 0 (m + 1) N₃] =
+  N₁[m + 1 + n := (↑) 0 (m + 1) N₃][m := ((↑) 0 (m + 1) N₂)[m + 1 + n := (↑) 0 (m + 1) N₃]] := by
+  induction N₁ generalizing m n N₂ N₃ with
+  | var =>
+    repeat (first | simp | split_ifs | omega)
+    . rw [@subst_shited_cancel (m + 1) 0]; any_goals omega
+      . apply shift_shifted
+    . repeat (first | simp | split_ifs | omega)
+  | app => simp_all
+  | abs _ ih =>
+    simp_all
+    have : m + 1 + n + 1 = m + 1 + 1 + n := by omega
+    rw [shift_subst_swap', shift_add, shift_add, this]; any_goals omega
+    apply ih

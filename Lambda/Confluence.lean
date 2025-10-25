@@ -39,7 +39,11 @@ lemma para_shift_conservation {i j : Nat} {N N' : Lambda} : N →βp N' → (↑
         rw [← shift_shift_swap _ (Nat.zero_le i), ← beta]
         apply BetaP.subst <;> aesop
 
-lemma para_shift_shifted {d c} {N₁ N₂ : Lambda} :
+section ShiftedLemmas
+
+variable {d c : Nat} {N₁ N₂ : Lambda}
+
+lemma para_shift_shifted:
     N₁ →βp N₂ → Shifted d c N₁ → Shifted d c N₂ := by
     intro h₁ h₂
     induction h₁ generalizing c d with
@@ -54,10 +58,10 @@ lemma para_shift_shifted {d c} {N₁ N₂ : Lambda} :
         rw [Nat.zero_add, Nat.add_comm]
         all_goals assumption
 
-lemma para_unshift_conservation {i j : Nat} {N N' : Lambda} :
-    Shifted j i N → N →βp N' → (↓) i j N →βp (↓) i j N' := by
+lemma para_unshift_conservation:
+    Shifted d c N₁ → N₁ →βp N₂ → (↓) c d N₁ →βp (↓) c d N₂ := by
     intro h₁ h₂
-    induction h₂ generalizing i j with
+    induction h₂ generalizing d c with
     | var => rfl
     | abs => simp; cases h₁; aesop
     | app => simp; cases h₁; constructor <;> aesop
@@ -67,7 +71,7 @@ lemma para_unshift_conservation {i j : Nat} {N N' : Lambda} :
         have hsm := para_shift_shifted hm h1
         rw [unshift_unshift_swap (by omega) (by aesop) ?shifted]
         case shifted =>
-            rw [Eq.symm (Nat.zero_add i)]
+            rw [Eq.symm (Nat.zero_add c)]
             nth_rw 2 [Eq.symm (Nat.zero_add 1)]
             apply shifted_subst <;> (try assumption)
             rw [Nat.zero_add, Nat.add_comm]; assumption
@@ -77,6 +81,8 @@ lemma para_unshift_conservation {i j : Nat} {N N' : Lambda} :
 
         rw [← unshift_shift_swap (by omega) hsn, ← beta]
         apply BetaP.subst <;> aesop
+
+end ShiftedLemmas
 
 lemma para_subst' {n} {M N N' : Lambda} : N →βp N' → M[n := N] →βp M[n := N'] := by
     intros
@@ -108,7 +114,7 @@ lemma para_beta {M N M' N' : Lambda} :
     intro hm hn; simp [beta]
     apply para_unshift_conservation
     . exact shifted_subst' 0 M N
-    . apply (para_subst hm); exact para_shift_conservation hn
+    . exact (para_subst hm) (para_shift_conservation hn)
 
 lemma abs_para_abs {M N : Lambda} (h : λ M →βp N) : ∃ M', N = λ M' ∧ M →βp M' := by cases h; case abs => aesop
 
@@ -119,7 +125,7 @@ lemma app_para_cases {M N L : Lambda} (h : M.app N →βp L) :
     case app M' N' _ _ => left; use M', N'
     case subst P M' N' _ _ => right; use P, M', N'
 
-def Diamond (R : α → α → Prop) := ∀ a b c, R a b → R a c → ∃ d, R b d ∧ R c d
+def Diamond (R : α → α → Prop) := ∀ A B C, R A B → R A C → ∃ D, R B D ∧ R C D
 
 theorem para_diamond : Diamond BetaP := by
     unfold Diamond; intro M M₁ M₂ h1 h2
@@ -130,13 +136,29 @@ theorem para_diamond : Diamond BetaP := by
         obtain ⟨N₄, _, _⟩ := ih N₃ N₁reN₃
         use λ N₄; aesop
     | app N₁ N₂ P₁ P₂ hn₁₂ hp₁₂ ihn ihp =>
-
-        rcases app_para_cases h2 with ⟨N₃, P₃, M₂eq, N₁reN₃, P₁reP₃⟩
-            | ⟨L₁, L₂, P₃, N₁eq, M₂eq, P₁reP₂, L₁reL₂⟩
+        rcases app_para_cases h2 with ⟨N₃, P₃, rfl, N₁reN₃, P₁reP₃⟩
+            | ⟨L₁, L₃, P₃, rfl, M₂eq, P₁reP₃, L₁reL₃⟩
         . obtain ⟨N₄, _, _⟩ := ihn N₃ N₁reN₃
           obtain ⟨P₄, _, _⟩ := ihp P₃ P₁reP₃
-          rw [M₂eq]
           use N₄.app P₄; constructor <;> apply BetaP.app <;> aesop
-        .
-            sorry
-    | subst => sorry
+        . obtain ⟨P₄, _, _⟩ := ihp P₃ P₁reP₃
+          obtain ⟨L₂, rfl, _⟩ := abs_para_abs hn₁₂
+          obtain ⟨N', N₂re, L₃re⟩ := ihn (λ L₃) (by aesop)
+          obtain ⟨L₄, rfl, _⟩ := abs_para_abs N₂re
+          cases L₃re; rename_i L₃reL₄
+          use L₄.beta P₄; constructor
+          . apply BetaP.subst <;> assumption
+          . rw [M₂eq]; apply para_beta <;> assumption
+    | subst N₁ N₂ P₁ P₂ hn hp ihn ihp=>
+        rcases app_para_cases h2 with ⟨M', P₃, rfl, lN₁reL₁, P₁reP₃⟩ |
+          ⟨N', N₃, P₃, lN₁eq, rfl, P₁reP₃, N'reN₃⟩
+        . obtain ⟨N₃, rfl, N₁reN₃⟩ := abs_para_abs lN₁reL₁
+          obtain ⟨N₄, _, _⟩ := ihn N₃ N₁reN₃
+          obtain ⟨P₄, _, _⟩ := ihp P₃ P₁reP₃
+          use N₄.beta P₄; constructor
+          apply para_beta <;> assumption
+          apply BetaP.subst <;> assumption
+        . simp at lN₁eq; rw [← lN₁eq] at N'reN₃
+          obtain ⟨N₄, _, _⟩ := ihn N₃ N'reN₃
+          obtain ⟨P₄, _, _⟩ := ihp P₃ P₁reP₃
+          use N₄.beta P₄; constructor <;> apply para_beta <;> assumption

@@ -22,7 +22,7 @@ Instead of using variable names, each variable is represented by a natural numbe
 Formally, the syntax of lambda terms using de Bruijn indices is defined as:
 
 ```math
-\Lambda := \N \mid (\Lambda\ \Lambda) \mid (\lambda\ \Lambda).
+\Lambda := \mathbb{N} \mid (\Lambda\ \Lambda) \mid (\lambda\ \Lambda).
 ```
 
 Here, variables are natural numbers, and each number refers to its binder according to its distance.  

@@ -20,9 +20,10 @@ De Bruijn indices provide a way to represent lambda calculus terms without namin
 Instead of using variable names, each variable is represented by a natural number that indicates how many binders ($\lambda$) separate it from its corresponding abstraction.
 
 Formally, the syntax of lambda terms using de Bruijn indices is defined as:
-$$
-    \Lambda := \N \mid (\Lambda\ \Lambda) \mid (\lambda\ \Lambda).
-$$
+
+```math
+\Lambda := \N \mid (\Lambda\ \Lambda) \mid (\lambda\ \Lambda).
+```
 
 Here, variables are natural numbers, and each number refers to its binder according to its distance.  
 For example:
@@ -36,7 +37,8 @@ For example:
 ### Shifting and Unshifting
 
 The shifting operation is defined as an adjustment that increases the indices of free variables whose values are greater than or equal to the context $c$.
-$$
+
+```math
 \begin{aligned}
     \uparrow_c^d n &=
     \begin{cases}
@@ -46,10 +48,12 @@ $$
     \uparrow_c^d(\lambda N) &= \lambda (\uparrow_{c + 1}^d N), \\[0.5em]
     \uparrow_c^d(N_1\ N_2) &= (\uparrow_c^d N_1)\ (\uparrow_c^d N_2).
 \end{aligned}
-$$
+```
+
 Here, $c$ is called the **context**, and $d$ the **displacement**.
 Similarly, we define the **unshifting** operation, which behaves the same way except that it decreases the index by $d$ instead of increasing it:
-$$
+
+```math
 \begin{aligned}
     \downarrow_c^d n &=
     \begin{cases}
@@ -59,12 +63,13 @@ $$
     \downarrow_c^d (\lambda N) &= \lambda (\downarrow_{c + 1}^d N), \\[0.5em]
     \downarrow_c^d (N_1\ N_2) &= (\downarrow_c^d N_1)\ (\downarrow_c^d N_2).
 \end{aligned}
-$$
+```
 
 ### Substitution
 
 The substitution operation replaces all occurrences of a variable in a term with another term. Its formal definition is as follows:
-$$
+
+```math
 \begin{aligned}
     n[m := M]&=
     \begin{cases}
@@ -74,18 +79,19 @@ $$
     (\lambda N)[m := M] &= \lambda N[m + 1 := \uparrow_0^1 M], \\[0.5em]
     (N_1\ N_2)[m := M] &= (N_1 [m := M]) (N_2 [m := M]).
 \end{aligned}
-$$
+```
 
-In the case of an abstraction, we move one level deeper into the binding structure, so the context increases by one. That’s why we use **\( m + 1 \)**.
+In the case of an abstraction, we move one level deeper into the binding structure, so the context increases by one. That’s why we use **$m + 1$**.
 
-Additionally, we apply shifting ($\uparrow_0^1$) to the term $ M $ being substituted. This is necessary because $M$ is inserted into a context with one extra binder. Without shifting, the free variables of $N$ could become incorrectly bound, changing the meaning of the expression.  
+Additionally, we apply shifting to the term $M$ being substituted. This is necessary because $M$ is inserted into a context with one extra binder. Without shifting, the free variables of $N$ could become incorrectly bound, changing the meaning of the expression.  
 
 ### Beta reductions in redex
 
 The following function expresses a beta reduction step of the term $(\lambda M) N$
-$$
+
+```math
 \texttt{beta}\ M\  N := \ \downarrow_0^1 (M[0 := \uparrow_0^1 N])
-$$
+```
 
 The beta reduction replaces the bound variable inside the abstraction $M$ with the argument $N$. However, since $N$ is being inserted into the body of a $\lambda$-abstraction, its free variables must be adjusted to account for the new binding level. This is why we first shift $N$ by one position before performing the substitution.
 

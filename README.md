@@ -28,11 +28,11 @@ Formally, the syntax of lambda terms using de Bruijn indices is defined as:
 Here, variables are natural numbers, and each number refers to its binder according to its distance.  
 For example:
 
-| Standard                                                     | de Bruijn                                           |
-| ------------------------------------------------------------ | --------------------------------------------------- |
-| $\lambda x.\, x$                                             | $\lambda\, 0$                                       |
-| $\lambda x.\, \lambda y.\, x$                                | $\lambda\, \lambda\, 1$                             |
-| $\lambda x.\, \lambda y.\, x\, x\, y\, (\lambda z.\, z\, x)$ | $\lambda\, \lambda\, 1\, 1\, 0\, (\lambda\, 0\, 2)$ |
+| Standard                                       | de Bruijn                             |
+| ---------------------------------------------- | ------------------------------------- |
+| $\lambda x. x$                                 | $\lambda 0$                           |
+| $\lambda x. \lambda y. x$                      | $\lambda \lambda 1$                   |
+| $\lambda x. \lambda y. x x y (\lambda z. z x)$ | $\lambda \lambda 1 1 0 (\lambda 0 2)$ |
 
 ### Shifting and Unshifting
 

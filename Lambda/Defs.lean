@@ -1,3 +1,5 @@
+import Mathlib.Logic.Relation
+
 inductive Lambda
   | var : Nat → Lambda
   | abs : Lambda → Lambda
@@ -86,11 +88,4 @@ theorem betap_refl {N : Lambda} :  N →βp N := by
   | app N₁ N₂ ih₁ ih₂ => constructor <;> assumption
   | abs M ih => constructor; assumption
 
-inductive BetaTR : Lambda → Lambda → Prop
-  | refl (M) : BetaTR M M
-  | step (M N L) : M →β L → BetaTR L N → BetaTR M N
-
-infixl:65 " ⇒β " => BetaTR
-
-@[refl]
-theorem betatr_refl {N : Lambda} : N ⇒β N := BetaTR.refl N
+notation:65 N₁ " ⇒β " N₂ => Relation.ReflTransGen Beta N₁ N₂

@@ -1,6 +1,7 @@
 import Lambda.Defs
 import Lambda.Properties
-import Mathlib.Tactic.Ring
+import Lambda.Diamond
+import Mathlib.Tactic
 
 open Lambda
 
@@ -125,8 +126,6 @@ lemma app_para_cases {M N L : Lambda} (h : M.app N →βp L) :
     case app M' N' _ _ => left; use M', N'
     case subst P M' N' _ _ => right; use P, M', N'
 
-def Diamond (R : α → α → Prop) := ∀ {A B C}, R A B → R A C → ∃ D, R B D ∧ R C D
-
 theorem para_diamond : Diamond BetaP := by
     unfold Diamond; intro M M₁ M₂ h1 h2
     induction h1 generalizing M₂ with
@@ -162,3 +161,98 @@ theorem para_diamond : Diamond BetaP := by
           obtain ⟨N₄, _, _⟩ := ihn N'reN₃
           obtain ⟨P₄, _, _⟩ := ihp P₁reP₃
           use N₄.beta P₄; constructor <;> apply para_beta <;> assumption
+
+section BetaTRprops
+
+variable {M₁ M₂ : Lambda}
+
+lemma appr_cong {N : Lambda} (h : M₁ ⇒β M₂) : M₁.app N ⇒β M₂.app N := by
+    induction h with
+    | refl => rfl
+    | tail h₁ h₂ ih=>
+        expose_names
+        exact Relation.ReflTransGen.tail ih (Beta.appr c b N h₂)
+
+lemma appl_cong {N : Lambda} (h : M₁ ⇒β M₂) : N.app M₁ ⇒β N.app M₂ := by
+    induction h with
+    | refl => rfl
+    | tail h₁ h₂ ih =>
+        expose_names
+        exact Relation.ReflTransGen.tail ih (Beta.appl c b N h₂)
+
+@[simp]
+lemma app_cong {N₁ N₂ : Lambda} (hm : M₁ ⇒β M₂) (hn : N₁ ⇒β N₂) :
+    M₁.app N₁ ⇒β M₂.app N₂ := by
+    calc
+        M₁.app N₁ ⇒β M₂.app N₁ := appr_cong hm
+        _         ⇒β M₂.app N₂ := appl_cong hn
+
+lemma abs_cong (h : M₁ ⇒β M₂) : (λ M₁) ⇒β (λ M₂) := by
+    induction h with
+    | refl => rfl
+    | tail h₁ h₂ ih =>
+        expose_names
+        exact Relation.ReflTransGen.tail ih (Beta.abs b c h₂)
+
+lemma beta_shift_cong {c d : ℕ} (h : M₁ →β M₂) : (↑) c d M₁ →β (↑) c d M₂ := by
+    induction h generalizing c with
+    | basis N₁ N₂ =>
+        simp; unfold beta
+        rw [shift_unshift_swap (Nat.zero_le c) (shifted_subst' 0 N₁ N₂)]
+        simp
+        rw [← shift_shift_swap _ (Nat.zero_le c), ← beta]
+        apply Beta.basis
+    | _ =>
+        simp; constructor; simp_all
+
+lemma shift_cong {c d : ℕ} (h : M₁ ⇒β M₂) : (↑) c d M₁ ⇒β (↑) c d M₂ := by
+    induction h with
+    | refl => rfl
+    | tail h₁ h₂ ih =>
+        rename_i N₁ N₂
+        exact Relation.ReflTransGen.tail ih (beta_shift_cong h₂)
+
+lemma sub_reduction {i : ℕ} {N : Lambda} (h : M₁ ⇒β M₂) :
+    N[i := M₁] ⇒β N[i := M₂] := by
+    induction N generalizing i M₁ M₂ with
+    | var n =>
+        simp_all; split <;> aesop
+    | app N₁ N₂ ih1 ih2 =>
+        simp_all
+    | abs N ih => exact abs_cong (ih <| shift_cong h)
+
+end BetaTRprops
+
+lemma step_para {M₁ M₂ : Lambda} (step : M₁ →β M₂) : M₁ →βp M₂ := by
+    induction step <;> (constructor <;> aesop)
+
+lemma para_betatr {M₁ M₂ : Lambda} (para : M₁ →βp M₂) : M₁ ⇒β M₂ := by
+    induction M₁ generalizing M₂ with
+    | var n => simp_all; rfl
+    | abs N₁ ih =>
+        obtain ⟨N₂, rfl, h₂⟩  := abs_para_abs para
+        exact abs_cong (ih h₂)
+    | app N₁ N₂ ih₁ ih₂ =>
+        rcases app_para_cases para with ⟨L₁, L₂, rfl, h₁, h₂⟩
+            | ⟨P₁, P₂, N₃, rfl, rfl, hn, hp⟩
+        simp_all
+        calc
+            (λ P₁).app N₂ ⇒β (λ P₂).app N₂ := appr_cong (ih₁ <| abs_reduction.mpr hp)
+            _             ⇒β (λ P₂).app N₃ := appl_cong (ih₂ hn)
+            _             ⇒β P₂.beta N₃ := by
+                apply Relation.ReflTransGen.single
+                apply Beta.basis
+
+notation:65 M₁ " →β* " M₂ => Relation.ReflTransGen BetaP M₁ M₂
+
+lemma paratr_iff_betatr {M N : Lambda} : (M →β* N) ↔ (M ⇒β N) := by
+    constructor <;> intro h <;> induction h <;> try rfl
+    all_goals rename_i h₁ h₂
+    exact Relation.ReflTransGen.trans h₂ (para_betatr h₁)
+    exact Relation.ReflTransGen.tail h₂ (step_para h₁)
+
+theorem church_rosser : Diamond <| Relation.ReflTransGen Beta := by
+    apply equiv_confluence
+    apply paratr_iff_betatr
+    apply confluence
+    exact para_diamond

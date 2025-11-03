@@ -105,5 +105,5 @@ After substitution, the abstraction disappears — we have exited one binding le
 - [x] Write all definitions.
 - [x] Define the beta reduction and beta reduction relations.
 - [x] Show that parallel beta reduction satisfies the diamond property.
-- [ ] Prove the Church-Rosser theorem.
+- [x] Prove the Church-Rosser theorem.
 - [ ] Writing a Blueprint.
